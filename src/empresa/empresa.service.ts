@@ -5,7 +5,7 @@ import { UpdateEmpresaDto } from './dto/update-empresa.dto';
 @Injectable()
 export class EmpresaService {
   create(createEmpresaDto: CreateEmpresaDto) {
-    return 'This action adds a new empresa';
+    return 'This action adds a new enterprise';
   }
 
   findAll() {
