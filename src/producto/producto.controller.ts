@@ -12,14 +12,14 @@ export class ProductoController {
     return this.productoService.create(createProductoDto);
   }
 
-  @Get()
+  @Get('lista')
   findAll() {
     return this.productoService.findAll();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.productoService.findOne(+id);
+    return this.productoService.findOne(id);
   }
 
   @Patch(':id')
