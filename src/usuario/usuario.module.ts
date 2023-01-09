@@ -17,3 +17,8 @@ import { Usuario, UsuarioSchema } from './entities/usuario.entity';
   ]
 })
 export class UsuarioModule {}
+
+
+
+
+
