@@ -1,61 +1,65 @@
-import { Injectable } from '@nestjs/common';
-import { CreateProductoDto } from './dto/create-producto.dto';
-import { UpdateProductoDto } from './dto/update-producto.dto';
-import { Producto } from './entities/producto.entity';
+import {BadRequestException, Injectable, InternalServerErrorException, NotFoundException} from '@nestjs/common';
+import {CreateProductoDto} from './dto/create-producto.dto';
+import {UpdateProductoDto} from './dto/update-producto.dto';
+import {Producto} from "./entities/producto.entity";
+import {Model} from "mongoose";
+import {InjectModel} from "@nestjs/mongoose";
 
 @Injectable()
 export class ProductoService {
 
-  private products:Producto[]= [
-    {
-      id:'1',
-      nombre:'Manzana',
-      precio:2.50,
-      promocion:true,
-      categoria:[],
-      stock:20,
-      foto:'https://manzana',
-      codigoQR:'qiweoa'
-    },
-    {
-      id:'2',
-      nombre:'Pera',
-      precio:0.50,
-      promocion:true,
-      categoria:[],
-      stock:5,
-      foto:'https://pera',
-      codigoQR:'asdjas'
-    },
-  ]
+  constructor(
+      @InjectModel(Producto.name)
+      private readonly productoModel: Model<Producto>,
+  ) {
+  }
 
-  create(createProductoDto: CreateProductoDto) {
-
-    let producto:Producto={
-      ...createProductoDto
+  async create(createProductoDto: CreateProductoDto) {
+    try{
+      return await this.productoModel.create(createProductoDto);
+    }catch (error){
+      this.handleExceptions(error);
     }
+  }
 
-    if(producto){    this.products.push(producto);    } else{
-      return `This action is IMPOSIBLOL`
+  async findAll() {
+    return this.productoModel.find();
+  }
+
+  async findOne(name: string) {
+
+    let producto: Producto;
+
+    producto = await this.productoModel.findOne({nombre: name});
+
+    if(!producto)
+      throw new NotFoundException(`Empresa with nombre "${name}" not found!`);
+
+    return producto;
+  }
+
+  async update(name: string, updateProductoDto: UpdateProductoDto) {
+    const producto = await this.findOne(name)
+    try{
+      await producto.updateOne(updateProductoDto);
+      return { ...producto.toJSON(), ...updateProductoDto };
+    }catch (error) {
+      this.handleExceptions(error);
     }
-    return 'This action adds a new producto';
   }
 
-  findAll() {
-    return this.products;
+  async remove(id: string) {
+    const { deletedCount } = await this.productoModel.deleteOne({_id: id});
+    if(deletedCount === 0)
+      throw new BadRequestException(`Pokemon with id "${ id }" not found!`)
+    return true;
   }
 
-  findOne(id: string) {
-    let producto = this.products.find( pro => pro.id == id)
-
-    return `This action returns a #${producto.id} producto and his name #${producto.nombre}`;
-  }
-
-  update(id: number, updateProductoDto: UpdateProductoDto) {
-    return `This action updates a #${id} producto`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} producto`;
+  private handleExceptions( error: any ) {
+    if ( error.code === 11000 ) {
+      throw new BadRequestException(`Empresa already exists in db ${ JSON.stringify( error.keyValue ) }`);
+    }
+    console.log(error);
+    throw new InternalServerErrorException(`Can't create Empresa - Check server logs`);
   }
 }
