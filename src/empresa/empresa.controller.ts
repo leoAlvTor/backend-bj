@@ -31,4 +31,5 @@ export class EmpresaController {
   remove(@Param('id') id: string) {
     return this.empresaService.remove(id);
   }
+
 }
