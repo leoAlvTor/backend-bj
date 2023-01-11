@@ -1,26 +1,71 @@
-import { Injectable } from '@nestjs/common';
+import {BadRequestException, Injectable, InternalServerErrorException, NotFoundException} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
+import { Usuario } from './entities/usuario.entity';
 
 @Injectable()
 export class UsuarioService {
-  create(createUsuarioDto: CreateUsuarioDto) {
-    return 'This action adds a new usuario';
+
+  constructor(
+    @InjectModel(Usuario.name)
+    private readonly usuarioModel: Model<Usuario>,
+) {
+}
+
+
+  async create(createUsuarioDto: CreateUsuarioDto) {
+    try{
+      return await this.usuarioModel.create(createUsuarioDto);
+    }catch (error){
+      this.handleExceptions(error);
+    }
   }
 
-  findAll() {
-    return `This action returns all usuario`;
+  async findAll() {
+    return this.usuarioModel.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} usuario`;
+  async findOne(cedula: string) {
+    let usuario: Usuario;
+
+    usuario = await this.usuarioModel.findOne({nombre: cedula});
+
+    if(!usuario)
+      throw new NotFoundException(`User with cedula "${cedula}" not found!`);
+
+    return usuario;
   }
 
-  update(id: number, updateUsuarioDto: UpdateUsuarioDto) {
-    return `This action updates a #${id} usuario`;
+
+
+  async update(cedula: string, updateUsuarioDto: UpdateUsuarioDto) {
+    const usuario = await this.findOne(cedula)
+    try{
+      await usuario.updateOne(updateUsuarioDto);
+      return { ...usuario.toJSON(), ...updateUsuarioDto };
+    }catch (error) {
+      this.handleExceptions(error);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} usuario`;
+
+
+
+  async remove(id: string) {
+    const { deletedCount } = await this.usuarioModel.deleteOne({_id: id});
+    if(deletedCount === 0)
+      throw new BadRequestException(`User with id "${ id }" not found!`)
+    return true;;
+  }
+
+
+  private handleExceptions( error: any ) {
+    if ( error.code === 11000 ) {
+      throw new BadRequestException(`User already exists in db ${ JSON.stringify( error.keyValue ) }`);
+    }
+    console.log(error);
+    throw new InternalServerErrorException(`Can't create User - Check server logs`);
   }
 }
