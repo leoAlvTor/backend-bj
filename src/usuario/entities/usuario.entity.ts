@@ -31,7 +31,7 @@ export class Usuario extends Document {
     @Prop({
         index:true,
     })
-    fechaNac: Date
+    fechaNac: string
 
     @Prop({
         index:true,
